@@ -26,5 +26,5 @@ jobs:
 
       - name: Build & Push
         run: |
-          docker build -t oasistem/DeepClaude:latest .
-          docker push oasistem/DeepClaude:latest
+          docker build -t oasistem/deepclaude:latest .
+          docker push oasistem/deepclaude:latest
