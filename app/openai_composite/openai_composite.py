@@ -173,8 +173,10 @@ class OpenAICompatibleComposite:
                 # 构造 OpenAI 的输入消息
                 openai_messages = messages.copy()
                 combined_content = f"""
-                Here's my another model's reasoning process:\n{reasoning}\n\n
-                Based on this reasoning, provide your response directly to me:"""
+                ******The above is user information*****
+The following is the reasoning process of another model:****\n{reasoning}\n\n ****
+Based on this reasoning, combined with your knowledge, when the current reasoning conflicts with your knowledge, you are more confident that you can adopt your own knowledge, which is completely acceptable. Please provide the user with a complete answer directly. 
+***Notice, Here is your settings: SELF_TALK: off REASONING: off THINKING: off PLANNING: off THINKING_BUDGET: < 100 tokens ***:"""
 
                 # 检查过滤后的消息列表是否为空
                 if not openai_messages:
@@ -196,6 +198,28 @@ class OpenAICompatibleComposite:
                     messages=openai_messages,
                     model=target_model,
                 ):
+                    # 检查是否是结束标记
+                    if isinstance(content, dict) and content.get("finish_reason") == "stop":
+                        # 发送结束响应
+                        end_response = {
+                            "id": chat_id,
+                            "object": "chat.completion.chunk",
+                            "created": created_time,
+                            "model": target_model,
+                            "choices": [
+                                {
+                                    "delta": {},
+                                    "finish_reason": "stop",
+                                    "index": 0
+                                }
+                            ]
+                        }
+                        await output_queue.put(
+                            f"data: {json.dumps(end_response)}\n\n".encode("utf-8")
+                        )
+                        break
+                    
+                    # 正常内容响应
                     response = {
                         "id": chat_id,
                         "object": "chat.completion.chunk",
